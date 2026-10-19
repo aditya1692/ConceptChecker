@@ -2,6 +2,7 @@ import os
 
 import gradio as gr
 import requests
+import json
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -24,12 +25,22 @@ def check_response(message, history):
         "model": "openai/gpt-oss-120b"
     })
 
-    print(r.json())
-    
 
     return r.json()["choices"][0]["message"]["content"]
 
 
+def get_examples():
+    ideas = []
+    # Open the file and parse the JSON data
+    with open('golden_pairs.json', 'r', encoding='utf-8') as file:
+        data = json.load(file)
+
+    for ideaEntry in data:
+        ideas.append(ideaEntry["idea"])
+
+    return ideas
+
 gr.ChatInterface(
-    fn=check_response, 
+    fn=check_response,
+    examples=get_examples()
 ).launch()
