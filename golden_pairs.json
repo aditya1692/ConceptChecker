@@ -1,0 +1,273 @@
+{
+  "meta": {
+    "brief": "100x C8 Module 2 Hackathon, Problem 3: Concept Check",
+    "scope": "Module 2 ideas from the brief, database ideas (5, 6) excluded",
+    "pass_rule": "PASS only if every must_hit point is present in the learner's own reasoning AND no fails_if trigger appears. Code applies this rule; AI only extracts which points are present.",
+    "bar": "Fail opening_case, then after the follow-up pass fresh_case (a different scenario at matched difficulty).",
+    "flow": "opening_case → AI flags recited sentence → (no gap & passes must_hit: done) | (gap: one follow_up → fresh_case → code grades against must_hit → pass/fail)",
+    "follow_up_rules": {
+      "who_writes": "AI writes the follow-up live, aimed at the sentence it flagged in the learner's answer, guided by reference_chain and recited_markers.",
+      "code_checks": [
+        "Exactly one question (one '?')",
+        "Contains none of the idea's avoid_followUp_terms; if it does, regenerate"
+      ],
+      "ai_or_human_checks": [
+        "Targets the flagged sentence",
+        "Asks what breaks or what happens, rather than asking for a definition",
+        "Does not hint at any must_hit point"
+      ]
+    },
+    "second_try_judge": "The second try is the fresh_case answer. AI extracts which must_hit points are present; code applies pass_rule. The model never declares understanding on its own."
+  },
+  "ideas": [
+    {
+      "id": "I1",
+      "idea": "Why does a backend exist at all?",
+      "reference_chain": [
+        "There are three machines: the user's, yours, and the one you rent or call.",
+        "Anything on the user's machine is readable and changeable by the user.",
+        "So three kinds of thing need a machine you control: secrets (the key), data that must be kept or shared across users, and rules that must be enforced (validation, scoring)."
+      ],
+      "recited_markers": [
+        "for security",
+        "for scalability",
+        "to handle business logic",
+        "best practice"
+      ],
+      "avoid_followUp_terms": [
+        "tamper",
+        "edit the score",
+        "shared",
+        "trust",
+        "cheat"
+      ],
+      "cases": {
+        "opening_case": {
+          "question": "You build a game where players post their high score to a public leaderboard. Do you need a backend? Why or why not?",
+          "expected_answer": "Yes. The scores are shared across players, so they must live on a machine everyone reaches, not on one player's device. And a score sent by the player's browser can't be trusted, because the player can edit it, so the server must check or decide it.",
+          "must_hit": [
+            "Data is shared across users, so it can't live on one user's machine",
+            "The client can be tampered with, so the score can't be trusted without a check on the server"
+          ],
+          "fails_if": [
+            "Only says 'for security' or 'for scalability' with no mechanism",
+            "Says the backend is needed to make the game faster"
+          ]
+        },
+        "fresh_case": {
+          "question": "You build a tip calculator page: enter a bill and a percentage, see the tip. No login, no AI. Do you need a backend? Why or why not?",
+          "expected_answer": "No. There is no secret to hide, nothing to remember or share between users, and no rule that matters if the user tampers with it, since they'd only cheat themselves. A static page on the user's machine is enough.",
+          "must_hit": [
+            "No secret or key is involved",
+            "Nothing needs to persist or be shared across users",
+            "Nothing needs enforcing against the user (tampering only affects them)"
+          ],
+          "fails_if": [
+            "Says yes because 'every app needs a backend'",
+            "Says no without giving any of the three reasons"
+          ]
+        }
+      }
+    },
+    {
+      "id": "I2",
+      "idea": "What does one API call carry?",
+      "reference_chain": [
+        "Four parts: address (the full endpoint, not just the domain), action (e.g. POST), key (permission, read from the environment), and package (the body: prompt + user input, model name).",
+        "The status code says whose fault a failure is: 2xx worked, 4xx your mistake, 5xx theirs. The message says what broke."
+      ],
+      "recited_markers": [
+        "a request and a response",
+        "it sends data",
+        "JSON",
+        "headers and body"
+      ],
+      "avoid_followUp_terms": [
+        "the key",
+        "API key",
+        "address worked",
+        "env variable",
+        "header"
+      ],
+      "cases": {
+        "opening_case": {
+          "question": "Your request to Groq comes back with 401. Your teammate says the URL must be wrong. Are they right? Which of the parts do you check, and why?",
+          "expected_answer": "No. A 4xx means it's our mistake, and since a server answered with a verdict, the address was reached. 401 points at the key: it's missing, wrong, or not being read from the environment. Check the key and the header that carries it.",
+          "must_hit": [
+            "Rejects the URL theory because the server responded",
+            "Identifies the key as the broken part",
+            "Points at a concrete place to check it: the env variable or the header"
+          ],
+          "fails_if": [
+            "Agrees the URL is wrong",
+            "Says it's Groq's fault (5xx thinking)"
+          ]
+        },
+        "fresh_case": {
+          "question": "Your request returns 200, but the plan is generic advice that ignores Aarav's workflow entirely. Which of the parts is wrong, and what exactly is missing?",
+          "expected_answer": "The package. Address, action and key all worked, because 200 means the call succeeded. But the content only carried the static instruction (the prompt) and not Aarav's workflow (the input). Prompt + input must go together in the package.",
+          "must_hit": [
+            "Uses the 200 status to rule out address, action and key",
+            "Identifies the package as the broken part",
+            "Names the missing piece: the user's input was not sent with the prompt"
+          ],
+          "fails_if": [
+            "Blames the model ('the AI is bad')",
+            "Says the API call failed"
+          ]
+        }
+      }
+    },
+    {
+      "id": "I3",
+      "idea": "Why can't the key live in the browser?",
+      "reference_chain": [
+        "Everything sent to the browser runs on the user's machine and is readable (source, DevTools, Network tab → request headers).",
+        "The key is permission to spend your money and quota, so whoever holds it spends it.",
+        "So the key stays on the machine that spends the money (your server, in an env variable). The browser calls your server, and the server adds the key."
+      ],
+      "recited_markers": [
+        "for security reasons",
+        "it can get hacked",
+        "it's sensitive",
+        "it's not safe"
+      ],
+      "avoid_followUp_terms": [
+        "Network tab",
+        "DevTools",
+        "decode",
+        "visible",
+        "copy the key"
+      ],
+      "cases": {
+        "opening_case": {
+          "question": "To hide the key, you base64-encode it in your JavaScript and decode it just before the request. Is the key safe now? Why or why not?",
+          "expected_answer": "No. The browser must decode it to send it, so the real key appears in the outgoing request, visible in the Network tab. Anyone can copy it and make calls that spend your credits. The fix is to keep the key on the server.",
+          "must_hit": [
+            "The browser must have the real key to send it",
+            "It's visible in the outgoing request (Network tab, headers, or decoded in source)",
+            "Whoever copies it can spend your money or quota"
+          ],
+          "fails_if": [
+            "Says encoding or obfuscation makes it safe",
+            "Only says 'hackers can decode it' with no mechanism"
+          ]
+        },
+        "fresh_case": {
+          "question": "You split the key into two halves in two different JS files and join them at runtime. Is the key safe now? Why or why not?",
+          "expected_answer": "No. Both halves are downloaded to the user's machine, and the joined key is sent in the request, readable in the Network tab. A stranger copies it and runs calls billed to you. Only keeping the key on your server fixes it.",
+          "must_hit": [
+            "Both pieces reach the user's machine, and the full key is assembled there",
+            "The full key appears in the outgoing request",
+            "Whoever copies it can spend your money or quota"
+          ],
+          "fails_if": [
+            "Says splitting makes it harder and is therefore acceptable",
+            "Says to use a different key or rotate it as the fix"
+          ]
+        }
+      }
+    },
+    {
+      "id": "I4",
+      "idea": "Why does the app forget without storage?",
+      "note": "Borderline: about storage, not tables. Drop it if you treat it as a database idea.",
+      "reference_chain": [
+        "Every request starts from nothing. Your function and the LLM keep nothing between calls.",
+        "The model only knows what is inside this call's package.",
+        "To 'remember', you save after each reply, fetch it before the next call, and send it inside the package. That saving lives on a machine you control."
+      ],
+      "recited_markers": [
+        "because it's stateless",
+        "APIs are stateless",
+        "no memory"
+      ],
+      "avoid_followUp_terms": [
+        "process memory",
+        "RAM",
+        "wiped",
+        "save it",
+        "outside the process"
+      ],
+      "cases": {
+        "opening_case": {
+          "question": "You keep each user's chat history in a Python dictionary (a global variable) on your server. It works while you test. What breaks in production, and why?",
+          "expected_answer": "The dictionary lives only in the running process's memory. When the server restarts or redeploys, it is wiped and every user's history is gone. To survive, history must be saved somewhere that outlives the process.",
+          "must_hit": [
+            "The variable lives only in the running process's memory",
+            "A restart or redeploy wipes it, so history is lost",
+            "Says it must be saved somewhere outside the process"
+          ],
+          "fails_if": [
+            "Says it works fine because it's on the server",
+            "Only says 'because it's stateless'"
+          ]
+        },
+        "fresh_case": {
+          "question": "Aarav gets a plan, then sends a new message: 'make step 2 shorter'. The model replies asking what step 2 is. Why, and what must this second call carry for it to work?",
+          "expected_answer": "Each call starts from nothing, and the model only sees this call's package, which contained just 'make step 2 shorter'. The second call must carry the previous plan (the history) along with the new message. Your app has to have saved that plan to send it.",
+          "must_hit": [
+            "The model only knows what's in this call's package",
+            "The previous plan or history wasn't sent",
+            "The second call must include the earlier plan alongside the new message, which means it was saved"
+          ],
+          "fails_if": [
+            "Says the model forgot or has a short memory, implying it ever stored anything",
+            "Says to fix the prompt wording"
+          ]
+        }
+      }
+    },
+    {
+      "id": "I7",
+      "idea": "How do you decide where a piece lives?",
+      "reference_chain": [
+        "Ask who can read it: anything on the user's machine is readable.",
+        "Ask who can change or wipe it: anything on the user's machine can be edited or cleared.",
+        "Ask whether it judges or enforces something: that must be on a machine you trust.",
+        "Ask whether it's private or secret.",
+        "Public, unchanging, harmless-if-edited things can ship to the client."
+      ],
+      "recited_markers": [
+        "it depends on the requirements",
+        "security and performance",
+        "sensitive stuff on the backend"
+      ],
+      "avoid_followUp_terms": [
+        "cheat",
+        "read the answers",
+        "source code",
+        "view source",
+        "judge"
+      ],
+      "cases": {
+        "opening_case": {
+          "question": "In Concept Check, where should the answer key for the fresh cases live: shipped with the browser code, or on your server? Why?",
+          "expected_answer": "On the server. If it ships to the browser, the learner can read the answers in the source or Network tab and pass without understanding. Because the key judges the learner, it must sit on a machine the learner can't read or change.",
+          "must_hit": [
+            "Server",
+            "In the browser the learner can read it, so they can cheat",
+            "It judges or enforces, so it must be out of the learner's reach"
+          ],
+          "fails_if": [
+            "Says browser for speed",
+            "Says server only 'because it's sensitive' with no mechanism"
+          ]
+        },
+        "fresh_case": {
+          "question": "In Concept Check, where can the fixed list of ideas (e.g. 'Why can't the key live in the browser?') live: shipped with the browser code, or on your server? Why?",
+          "expected_answer": "It can ship with the client. It's public and doesn't change, and seeing or editing it gives the learner no advantage, because it holds no answers and judges nothing. Nothing about it needs hiding or enforcing.",
+          "must_hit": [
+            "The client is fine",
+            "It's public and has nothing secret, so reading it gives no advantage",
+            "It doesn't judge or enforce, so tampering only affects the learner"
+          ],
+          "fails_if": [
+            "Says server because 'everything should be on the backend'",
+            "Says client with no reason"
+          ]
+        }
+      }
+    }
+  ]
+}
