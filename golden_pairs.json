@@ -2,24 +2,30 @@
   {
     "id": "I1",
     "idea": "Why does a backend exist at all?",
+    "recited_indicators": [
+      "for security",
+      "for scalability",
+      "to handle business logic",
+      "best practice"
+    ],
+
     "opening_case": {
       "question": "You build a game where players post their high score to a public leaderboard. Do you need a backend? Why or why not?",
       "expected_answer": "Yes. The scores are shared across players, so they must live on a machine everyone reaches, not on one player's device. And a score sent by the player's browser can't be trusted, because the player can edit it, so the server must check or decide it.",
       "expected_steps": [
-        "There are three machines: the user's, yours, and the one you rent or call.",
-        "Anything on the user's machine is readable and changeable by the user.",
-        "So three kinds of thing need a machine you control: secrets (the key), data that must be kept or shared across users, and rules that must be enforced (validation, scoring)."
-      ],
-       "recited_indicators": [
-        "for security",
-        "for scalability",
-        "to handle business logic",
-        "best practice"
+        "The scores are shared across players, so they must live on a machine everyone reaches, not on one player's device.",
+        "Anything coming from the player's machine, like the score their browser sends, can be read and changed by the player.",
+        "So a machine you control (the server) must enforce the rule: check or decide the score instead of trusting it."
       ]
     },
     "fresh_case": {
       "question": "You build a tip calculator page: enter a bill and a percentage, see the tip. No login, no AI. Do you need a backend? Why or why not?",
-      "expected_answer": "No. There is no secret to hide, nothing to remember or share between users, and no rule that matters if the user tampers with it, since they'd only cheat themselves. A static page on the user's machine is enough."
+      "expected_answer": "No. There is no secret to hide, nothing to remember or share between users, and no rule that matters if the user tampers with it, since they'd only cheat themselves. A static page on the user's machine is enough.",
+      "expected_steps": [
+        "No secret or key is involved",
+        "Nothing needs to persist or be shared across users",
+        "Nothing needs enforcing against the user (tampering only affects them)"
+      ]
     }
   },
   {

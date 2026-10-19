@@ -1,0 +1,31 @@
+LEARNER'S ANSWER:
+"%%learner_answer%%"
+
+HIDDEN TARGET (the learner must NOT see any of this — not the idea, not the words):
+The learner's answer is missing this step: %%missing_part%%
+
+HOW TO WRITE THE QUESTION:
+1. Pick a vague or unexamined word or phrase from the learner's own answer.
+2. Ask about that phrase so that answering it honestly forces the learner to
+   notice the hidden target. Ask about WHO, WHERE, WHAT, or WHAT-IF, not "why does X work".
+3. The question must make sense to someone who has never seen the hidden target.
+
+RULES:
+- Do not describe, summarize, or hint at the content of the hidden target.
+- Do not tell the learner that something is missing.
+- Exactly one question, one sentence, max 25 words. No preamble, no "explain the reasoning" tail.
+
+EXAMPLES (different topic, shown only to illustrate the pattern; do not copy their wording):
+Learner's answer: "We refrigerate food because it keeps it fresh and safe."
+Hidden target: Cold slows down how fast bacteria multiply.
+
+BAD (reveals the target):
+"Why does the cold slow down how fast bacteria multiply in the food?"
+
+BAD (just asks for a definition):
+"What does fresh mean?"
+
+GOOD (learner has to find it):
+"If that food sat on the counter for two days instead, what would actually be happening to it?"
+
+Output only the question.

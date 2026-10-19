@@ -1,0 +1,32 @@
+LEARNER'S ANSWER:
+"%%learner_answer%%"
+
+FLAGGED PHRASE (similar to): "%%recited_phrase%%"
+This is a stock answer. The learner may be repeating it without understanding
+what it actually means in this situation.
+
+HOW TO WRITE THE QUESTION:
+1. Find where the learner said this (or something similar) and quote or closely echo their own words.
+2. Ask them to make it concrete: what exactly would go wrong without it, who would cause it,
+   how it would happen, step by step. Ask for a specific scenario or consequence.
+3. The learner must reason it out, not restate the phrase or give a definition.
+
+RULES:
+- Do not criticise the phrase or call it vague, generic, or memorised.
+- Do not offer the explanation yourself (no "is it because...", no options to pick from).
+- Exactly one question, one sentence, max 25 words. No preamble.
+
+EXAMPLES (different topic, shown only to illustrate the pattern; do not copy their wording):
+Learner's answer: "We refrigerate food because it keeps it fresh and safe."
+Flagged phrase: "keeps it fresh"
+
+BAD (lets them recite again):
+"Why does refrigeration keep food fresh?"
+
+BAD (gives the answer):
+"Does it keep food fresh because cold slows down bacteria?"
+
+GOOD (forces a concrete mechanism):
+"You said it keeps food fresh; what exactly is changing inside food that stops being fresh?"
+
+Output only the question.

@@ -33,7 +33,7 @@ def check_response(message, history):
         return golden_dataSet[selected_dataSet_Index]["opening_case"]["question"]
 
     elif current_status == Status.CASE_ONE:
-        prompt = get_case_one_prompt()
+        prompt = get_case_prompt("opening_case")
 
         response = process_by_llm(prompt, message, history)
 
@@ -43,52 +43,85 @@ def check_response(message, history):
         recited_indicator_index = int(response_split[1])
 
         if missed_step_index != -1 or recited_indicator_index != -1:
+            print("Going for follow-up with missed_step_index:", missed_step_index, "and recited_indicator_index:", recited_indicator_index)
+
             current_status = Status.CASE_ONE_FOLLOW_UP
-            return "It seems there are some issues with your answer. Let's discuss them."
+            followUpPrompt = get_followUp_prompt(missed_step_index, recited_indicator_index, message)
+            return process_by_llm(followUpPrompt, "", history)
         else:
+            print("No missed steps or recited indicators, moving to CASE_TWO.")
+
             current_status = Status.CASE_TWO
-            return "Great! Let's move on to the next case."
+            return golden_dataSet[selected_dataSet_Index]["fresh_case"]["question"]
     
     elif current_status == Status.CASE_ONE_FOLLOW_UP:
-        # Handle CASE_ONE_FOLLOW_UP logic here
-        pass
+         current_status = Status.CASE_TWO
+         return golden_dataSet[selected_dataSet_Index]["fresh_case"]["question"]
 
     elif current_status == Status.CASE_TWO:
-        # Handle CASE_TWO logic here
-        pass
+        prompt = get_case_prompt("fresh_case")
+
+        response = process_by_llm(prompt, message, history)
+
+        print("LLM Response for CASE_TWO:", response)
+
+        current_status = Status.RESULT
+        return "Thank you for your response. You have completed both cases."
 
     elif current_status == Status.RESULT:
         # Handle RESULT logic here
         pass
 
-def get_followUp_prompt(missed_step_index, recited_indicator_index):
-    prompt = ""
+def get_followUp_prompt(missed_step_index, recited_indicator_index, prev_message):
+    data = golden_dataSet[selected_dataSet_Index]
+    prompt = f'LEARNER\'S ANSWER:\n"{prev_message}"\n\n'
 
-    if (missed_step_index != -1):
-        missed_part = golden_dataSet[selected_dataSet_Index]["opening_case"]["expected_steps"][missed_step_index]
-        prompt += f"The user missed the following expected step in the answer: {missed_part}\n draft a follow up question, Ask them to work it out, not define it. Push with why, and what breaks without it."
+    if recited_indicator_index != -1:
+        phrase = data["recited_indicators"][recited_indicator_index]
 
-    if (recited_indicator_index != -1):
-        prompt += f"The user recited the indicator at index {recited_indicator_index}.\n"
+        with open("FollowUp_Guide_RecitedPhrase.txt", "r") as f:
+                prompt += f.read() + "\n"
+
+        prompt = prompt.replace("%%learner_answer%%", prev_message).replace("%%recited_indicator%%", phrase)
+
+    if missed_step_index != -1:
+        missed = data["opening_case"]["expected_steps"][missed_step_index]
+
+        with open("FollowUp_Guide_MissingPart.txt", "r") as f:
+                prompt += f.read() + "\n"
+
+        prompt = prompt.replace("%%learner_answer%%", prev_message).replace("%%missed_part%%", missed)
+
+    print("Follow-up prompt generated:", prompt)
 
     return prompt
 
-def get_case_one_prompt():
-        expected_steps = golden_dataSet[selected_dataSet_Index]["opening_case"]["expected_steps"]
-        recited_indicators = golden_dataSet[selected_dataSet_Index]["opening_case"]["recited_indicators"]
+def get_case_prompt(case_key):
+        case = golden_dataSet[selected_dataSet_Index][case_key]
+        expected_steps = case["expected_steps"]
+        recited_indicators = golden_dataSet[selected_dataSet_Index]["recited_indicators"]
 
-        expected_steps_sub_prompt = f"Here is a list of required parts in an ideal answer {expected_steps}, flag index of any missing part if you don't find similar content in the user's response\n"
-        recited_indicators_sub_prompt = f"reciting indicators to look for in answer: {recited_indicators}, flag index of any similar indicator found in the user's response\n"
-        logic_sub_prompt = "Evaluate the user's response carefully. Use similar meaning matching instead of exact string matching. \n"
+        context_sub_prompt = f"You are grading a learner's answer.\nQUESTION: {case['question']}\nREFERENCE ANSWER: {case['expected_answer']}\n\n"
+        expected_steps_sub_prompt = (
+            f"Here is a list of reasoning steps a complete answer should contain: {expected_steps}\n"
+            "A step counts as present if the learner's answer conveys its idea in their own words, applied to this scenario. It does not need the same wording. "
+            "Flag a step only if its idea is absent. If several are missing, return the lowest index.\n"
+        )
+        recited_indicators_sub_prompt = (
+            f"Here is a list of recited buzzword phrases: {recited_indicators}\n"
+            "Flag one only if the learner uses that phrase (or a near-identical buzzword) as their justification INSTEAD of explaining the mechanism. "
+            "If the learner explains why (what can go wrong, on which machine, who can change what), do NOT flag it, even if the topic is related (e.g. explaining tampering is not reciting 'for security').\n"
+        )
+        logic_sub_prompt = "The reference answer is complete: an answer equivalent to it must get -1, -1.\n"
         output_format_sub_prompt = 'return your evaluation strictly in comma seperated string in this format: missed_step_index, recited_indicator_index. Nothing else. Default value -1 for both if nothing is missing or found\n'
 
-
-        prompt = logic_sub_prompt  + expected_steps_sub_prompt + recited_indicators_sub_prompt+ output_format_sub_prompt + ", here is the user answer:"
+        prompt = context_sub_prompt + expected_steps_sub_prompt + recited_indicators_sub_prompt + logic_sub_prompt + output_format_sub_prompt + "\nhere is the learner's answer:"
         print("Generated prompt for CASE_ONE:", prompt)
         return prompt
 
 def set_selected_dataSet_Index(message):
     global selected_dataSet_Index
+
     for i, entry in enumerate(golden_dataSet):
         if entry["idea"] == message:
             selected_dataSet_Index = i
@@ -112,7 +145,7 @@ def process_by_llm(prompt, message, history):
         "model": "openai/gpt-oss-120b"
     })
     
-    print(r.json()["choices"][0]["message"]["reasoning"])
+    print("\n LLM Reasoning: " + r.json()["choices"][0]["message"]["reasoning"])
     return r.json()["choices"][0]["message"]["content"]
 
 def init_goldenDataSet():
