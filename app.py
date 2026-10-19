@@ -33,8 +33,22 @@ def check_response(message, history):
         return golden_dataSet[selected_dataSet_Index]["opening_case"]["question"]
 
     elif current_status == Status.CASE_ONE:
-        # Handle CASE_ONE logic here
-        pass
+        prompt = get_case_one_prompt()
+
+        response = process_by_llm(prompt, message, history)
+
+        print("LLM Response:", response)
+        response_split = response.strip().split(",")
+        missed_step_index = int(response_split[0])
+        recited_indicator_index = int(response_split[1])
+
+        if missed_step_index != -1 or recited_indicator_index != -1:
+            current_status = Status.CASE_ONE_FOLLOW_UP
+            return "It seems there are some issues with your answer. Let's discuss them."
+        else:
+            current_status = Status.CASE_TWO
+            return "Great! Let's move on to the next case."
+    
     elif current_status == Status.CASE_ONE_FOLLOW_UP:
         # Handle CASE_ONE_FOLLOW_UP logic here
         pass
@@ -47,6 +61,31 @@ def check_response(message, history):
         # Handle RESULT logic here
         pass
 
+def get_followUp_prompt(missed_step_index, recited_indicator_index):
+    prompt = ""
+
+    if (missed_step_index != -1):
+        missed_part = golden_dataSet[selected_dataSet_Index]["opening_case"]["expected_steps"][missed_step_index]
+        prompt += f"The user missed the following expected step in the answer: {missed_part}\n draft a follow up question, Ask them to work it out, not define it. Push with why, and what breaks without it."
+
+    if (recited_indicator_index != -1):
+        prompt += f"The user recited the indicator at index {recited_indicator_index}.\n"
+
+    return prompt
+
+def get_case_one_prompt():
+        expected_steps = golden_dataSet[selected_dataSet_Index]["opening_case"]["expected_steps"]
+        recited_indicators = golden_dataSet[selected_dataSet_Index]["opening_case"]["recited_indicators"]
+
+        expected_steps_sub_prompt = f"Here is a list of required parts in an ideal answer {expected_steps}, flag index of any missing part if you don't find similar content in the user's response\n"
+        recited_indicators_sub_prompt = f"reciting indicators to look for in answer: {recited_indicators}, flag index of any similar indicator found in the user's response\n"
+        logic_sub_prompt = "Evaluate the user's response carefully. Use similar meaning matching instead of exact string matching. \n"
+        output_format_sub_prompt = 'return your evaluation strictly in comma seperated string in this format: missed_step_index, recited_indicator_index. Nothing else. Default value -1 for both if nothing is missing or found\n'
+
+
+        prompt = logic_sub_prompt  + expected_steps_sub_prompt + recited_indicators_sub_prompt+ output_format_sub_prompt + ", here is the user answer:"
+        print("Generated prompt for CASE_ONE:", prompt)
+        return prompt
 
 def set_selected_dataSet_Index(message):
     global selected_dataSet_Index
@@ -73,7 +112,7 @@ def process_by_llm(prompt, message, history):
         "model": "openai/gpt-oss-120b"
     })
     
-    
+    print(r.json()["choices"][0]["message"]["reasoning"])
     return r.json()["choices"][0]["message"]["content"]
 
 def init_goldenDataSet():
@@ -93,7 +132,6 @@ def get_examples():
 
 def init():
     init_goldenDataSet()
-
 
 init_goldenDataSet()
 
