@@ -1,5 +1,7 @@
 [project]
 name = "conceptchecker"
+[tool.vercel]
+entrypoint = "conceptCheck:app"
 version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
