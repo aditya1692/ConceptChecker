@@ -1,9 +1,9 @@
 [project]
 name = "conceptchecker"
-[tool.vercel]
-entrypoint = "conceptCheck:app"
 version = "0.1.0"
 requires-python = ">=3.12"
+[tool.vercel]
+entrypoint = "conceptCheck:app"
 dependencies = [
     "fastapi[standard]>=0.149.0",
     "gradio>=6.30.0",
