@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Concept Checker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,520;9..144,640&family=Outfit:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --paper: #e7e1d4;
+      --sheet: #f7f4ee;
+      --ink: #1c1915;
+      --muted: #5f584e;
+      --line: #ddd4c6;
+      --green: #1f6f5b;
+      --green-ink: #f4f7f4;
+      --you: #24312c;
+      --danger: #8c2f2f;
+    }
+
+    * { box-sizing: border-box; }
+
+    [hidden] { display: none !important; }
+
+    html, body { height: 100%; }
+
+    body {
+      margin: 0;
+      height: 100dvh;
+      overflow: hidden;
+      color: var(--ink);
+      background:
+        radial-gradient(900px 420px at 0% -10%, #f3ecdc 0%, transparent 55%),
+        var(--paper);
+      font-family: "Outfit", "Segoe UI", sans-serif;
+      font-size: 16px;
+      line-height: 1.45;
+    }
+
+    .app {
+      height: 100dvh;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: var(--sheet);
+    }
+
+    header {
+      flex: none;
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: flex-end;
+      padding: 22px 22px 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .kicker {
+      margin: 0 0 4px;
+      color: var(--green);
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      font-family: "Fraunces", Georgia, serif;
+      font-size: 1.8rem;
+      font-weight: 640;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+    }
+
+    .description {
+      margin: 6px 0 0;
+      color: var(--muted);
+    }
+
+    #current {
+      margin: 8px 0 0;
+      font-weight: 600;
+    }
+
+    #restart {
+      flex: none;
+      border: 1px solid var(--line);
+      background: transparent;
+      color: var(--ink);
+      border-radius: 999px;
+      padding: 8px 14px;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    #restart:hover { border-color: var(--ink); }
+
+    main {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow: auto;
+      padding: 22px;
+    }
+
+    #picker h2 {
+      margin: 0 0 6px;
+      font-family: "Fraunces", Georgia, serif;
+      font-size: 1.45rem;
+      font-weight: 520;
+    }
+
+    #picker-note {
+      margin: 0 0 16px;
+      color: var(--muted);
+    }
+
+    #topics {
+      display: grid;
+      gap: 10px;
+    }
+
+    .topic {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 2rem 1fr;
+      gap: 10px;
+      align-items: baseline;
+      text-align: left;
+      padding: 14px 16px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fffdf8;
+      color: inherit;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .topic:hover { border-color: var(--green); }
+
+    .topic:focus-visible,
+    button:focus-visible,
+    textarea:focus-visible {
+      outline: 2px solid var(--green);
+      outline-offset: 2px;
+    }
+
+    .topic .num {
+      color: var(--green);
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .topic .idea {
+      font-family: "Fraunces", Georgia, serif;
+      font-size: 1.12rem;
+      font-weight: 520;
+      line-height: 1.3;
+    }
+
+    .topic:disabled { opacity: 0.55; cursor: wait; }
+
+    #topics-status {
+      min-height: 1.4em;
+      margin: 12px 0 0;
+      color: var(--danger);
+    }
+
+    #retry {
+      margin-top: 8px;
+      border: 0;
+      background: var(--ink);
+      color: var(--sheet);
+      border-radius: 999px;
+      padding: 8px 14px;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .messages {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .messages:not(:empty) { margin-bottom: 18px; }
+
+    .message {
+      max-width: min(85%, 36rem);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .message.you { align-self: flex-end; align-items: flex-end; }
+
+    .who {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .message p {
+      margin: 0;
+      padding: 12px 14px;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .message.checker p {
+      background: #fffdf8;
+      border: 1px solid var(--line);
+      border-radius: 16px 16px 16px 4px;
+    }
+
+    .message.you p {
+      background: var(--you);
+      color: #f6f3ec;
+      border-radius: 16px 16px 4px 16px;
+    }
+
+    .message.pending p { color: var(--muted); }
+
+    #composer {
+      flex: none;
+      border-top: 1px solid var(--line);
+      padding: 14px 22px 18px;
+      background: var(--sheet);
+    }
+
+    #composer label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .compose-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: end;
+    }
+
+    textarea {
+      width: 100%;
+      resize: vertical;
+      min-height: 64px;
+      max-height: 200px;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fffdf8;
+      color: inherit;
+      font: inherit;
+      line-height: 1.45;
+    }
+
+    #send {
+      border: 0;
+      background: var(--green);
+      color: var(--green-ink);
+      border-radius: 14px;
+      padding: 12px 18px;
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    #send:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    .hint {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    @media (min-width: 800px) {
+      body { padding: 28px; }
+
+      .app {
+        width: min(760px, 100%);
+        height: calc(100dvh - 56px);
+        margin: 0 auto;
+        border: 1px solid #d4cbbd;
+        border-radius: 22px;
+        box-shadow: 0 24px 60px rgba(48, 38, 20, 0.08);
+        overflow: hidden;
+      }
+    }
+
+    @media (max-width: 560px) {
+      header { align-items: flex-start; flex-direction: column; }
+      h1 { font-size: 1.5rem; }
+      .compose-row { grid-template-columns: 1fr; }
+      #send { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div>
+        <p class="kicker">Golden dataset</p>
+        <h1>Concept Checker</h1>
+        <p class="description">Check your ideas against the golden dataset.</p>
+        <p id="current" hidden></p>
+      </div>
+      <button type="button" id="restart" hidden>Start over</button>
+    </header>
+
+    <main>
+      <section id="picker" aria-labelledby="picker-title">
+        <h2 id="picker-title">Choose a topic</h2>
+        <p id="picker-note">The check starts when you pick one.</p>
+        <div id="topics"></div>
+        <p id="topics-status" role="status"></p>
+        <button type="button" id="retry" hidden>Try again</button>
+      </section>
+      <ol class="messages" id="messages" aria-live="polite"></ol>
+    </main>
+
+    <form id="composer" hidden>
+      <label for="answer">Your answer</label>
+      <div class="compose-row">
+        <textarea id="answer" rows="3" placeholder="Explain what happens, and why"></textarea>
+        <button type="submit" id="send">Send</button>
+      </div>
+      <p class="hint">Enter sends. Shift+Enter adds a line.</p>
+    </form>
+  </div>
+
+  <script>
+    const picker = document.querySelector("#picker");
+    const pickerTitle = document.querySelector("#picker-title");
+    const pickerNote = document.querySelector("#picker-note");
+    const topicsEl = document.querySelector("#topics");
+    const topicsStatus = document.querySelector("#topics-status");
+    const retry = document.querySelector("#retry");
+    const messagesEl = document.querySelector("#messages");
+    const composer = document.querySelector("#composer");
+    const answer = document.querySelector("#answer");
+    const send = document.querySelector("#send");
+    const restart = document.querySelector("#restart");
+    const current = document.querySelector("#current");
+    const main = document.querySelector("main");
+
+    let sessionId = newSessionId();
+    let topics = [];
+    let busy = false;
+    let requestGen = 0;
+
+    retry.addEventListener("click", loadTopics);
+    restart.addEventListener("click", reset);
+    composer.addEventListener("submit", onSubmit);
+    answer.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        composer.requestSubmit();
+      }
+    });
+    topicsEl.addEventListener("click", (event) => {
+      const button = event.target.closest("button[data-index]");
+      if (!button || busy) return;
+      const idea = topics[Number(button.dataset.index)];
+      if (idea) begin(idea);
+    });
+
+    loadTopics();
+
+    function newSessionId() {
+      if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+      return "s-" + Math.random().toString(36).slice(2) + Date.now().toString(36);
+    }
+
+    async function loadTopics() {
+      topicsStatus.textContent = "Loading topics…";
+      topicsStatus.style.color = "var(--muted)";
+      retry.hidden = true;
+      topicsEl.replaceChildren();
+      try {
+        const response = await fetch("/api/ideas");
+        if (!response.ok) throw new Error("status " + response.status);
+        const ideas = await response.json();
+        if (!Array.isArray(ideas) || ideas.some((idea) => typeof idea !== "string")) {
+          throw new Error("unexpected ideas payload");
+        }
+        topics = ideas;
+        renderTopics();
+        topicsStatus.textContent = topics.length ? "" : "No topics are available.";
+        topicsStatus.style.color = "var(--danger)";
+      } catch (error) {
+        topics = [];
+        topicsStatus.style.color = "var(--danger)";
+        topicsStatus.textContent = "Couldn't load topics.";
+        retry.hidden = false;
+      }
+    }
+
+    function renderTopics() {
+      topicsEl.replaceChildren();
+      topics.forEach((idea, index) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "topic";
+        button.dataset.index = String(index);
+        const num = document.createElement("span");
+        num.className = "num";
+        num.textContent = String(index + 1).padStart(2, "0");
+        const label = document.createElement("span");
+        label.className = "idea";
+        label.textContent = idea;
+        button.append(num, label);
+        topicsEl.append(button);
+      });
+    }
+
+    function setTopicsDisabled(disabled) {
+      topicsEl.querySelectorAll("button").forEach((button) => {
+        button.disabled = disabled;
+      });
+    }
+
+    // conceptCheck.py only leaves IDLE when the message equals an idea string.
+    function needsTopic(text) {
+      return text.includes("Pick another idea to continue.")
+        || text.includes("Pick an idea to try again.")
+        || text.includes("Please select an idea from the examples.");
+    }
+
+    async function postCheck(workflow, gen) {
+      const response = await fetch("/api/check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ session_id: sessionId, workflow })
+      });
+      if (gen !== requestGen) return null;
+      if (!response.ok) {
+        throw new Error("The checker didn't respond (" + response.status + ").");
+      }
+      const data = await response.json();
+      if (gen !== requestGen) return null;
+      if (!data || typeof data.check !== "string") {
+        throw new Error("The checker returned an unexpected response.");
+      }
+      return data.check;
+    }
+
+    async function begin(idea) {
+      const gen = ++requestGen;
+      busy = true;
+      setTopicsDisabled(true);
+      addMessage("you", idea);
+      current.hidden = false;
+      current.textContent = idea;
+      restart.hidden = false;
+      picker.hidden = true;
+      const pending = addPending();
+      try {
+        const reply = await postCheck(idea, gen);
+        if (gen !== requestGen || reply == null) return;
+        pending.remove();
+        addMessage("checker", reply);
+        if (needsTopic(reply)) showPicker("again");
+        else showComposer();
+      } catch (error) {
+        if (gen !== requestGen) return;
+        pending.remove();
+        const last = messagesEl.lastElementChild;
+        if (last) last.remove();
+        current.hidden = true;
+        if (!messagesEl.children.length) restart.hidden = true;
+        showPicker(messagesEl.children.length ? "again" : "start");
+        topicsStatus.style.color = "var(--danger)";
+        topicsStatus.textContent = "The checker didn't respond. Pick the topic again.";
+      } finally {
+        if (gen === requestGen) {
+          busy = false;
+          setTopicsDisabled(false);
+        }
+        scrollToEnd();
+      }
+    }
+
+    async function onSubmit(event) {
+      event.preventDefault();
+      const text = answer.value.trim();
+      if (!text || busy) return;
+      const gen = ++requestGen;
+      busy = true;
+      answer.value = "";
+      answer.disabled = true;
+      send.disabled = true;
+      addMessage("you", text);
+      const pending = addPending();
+      try {
+        const reply = await postCheck(text, gen);
+        if (gen !== requestGen || reply == null) return;
+        pending.remove();
+        addMessage("checker", reply);
+        if (needsTopic(reply)) showPicker("again");
+        else showComposer();
+      } catch (error) {
+        if (gen !== requestGen) return;
+        pending.remove();
+        addMessage("checker", "The checker didn't respond. Send your answer again.");
+        showComposer();
+      } finally {
+        if (gen === requestGen) {
+          busy = false;
+          answer.disabled = false;
+          send.disabled = false;
+        }
+        scrollToEnd();
+      }
+    }
+
+    function showComposer() {
+      picker.hidden = true;
+      composer.hidden = false;
+      answer.disabled = false;
+      send.disabled = false;
+      answer.focus();
+    }
+
+    function showPicker(mode) {
+      composer.hidden = true;
+      picker.hidden = false;
+      answer.value = "";
+      if (mode === "again") {
+        pickerTitle.textContent = "Choose another topic";
+        pickerNote.textContent = "Pick one to start the next check. Your result stays above.";
+        main.append(picker);
+        current.hidden = true;
+      } else {
+        pickerTitle.textContent = "Choose a topic";
+        pickerNote.textContent = "The check starts when you pick one.";
+        main.prepend(picker);
+        current.hidden = true;
+      }
+    }
+
+    function reset() {
+      requestGen += 1;
+      busy = false;
+      sessionId = newSessionId();
+      messagesEl.replaceChildren();
+      answer.value = "";
+      answer.disabled = false;
+      send.disabled = false;
+      restart.hidden = true;
+      current.hidden = true;
+      topicsStatus.textContent = "";
+      setTopicsDisabled(false);
+      showPicker("start");
+    }
+
+    function addMessage(role, text) {
+      const item = document.createElement("li");
+      item.className = "message " + (role === "you" ? "you" : "checker");
+      const who = document.createElement("span");
+      who.className = "who";
+      who.textContent = role === "you" ? "You" : "Checker";
+      const body = document.createElement("p");
+      body.textContent = text;
+      item.append(who, body);
+      messagesEl.append(item);
+      scrollToEnd();
+      return item;
+    }
+
+    function addPending() {
+      const item = addMessage("checker", "Checking…");
+      item.classList.add("pending");
+      return item;
+    }
+
+    function scrollToEnd() {
+      main.scrollTop = main.scrollHeight;
+    }
+  </script>
+</body>
+</html>
