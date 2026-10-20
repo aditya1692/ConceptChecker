@@ -58,15 +58,6 @@
       border-bottom: 1px solid var(--line);
     }
 
-    .kicker {
-      margin: 0 0 4px;
-      color: var(--green);
-      font-size: 0.78rem;
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
-
     h1 {
       margin: 0;
       font-family: "Fraunces", Georgia, serif;
@@ -75,6 +66,8 @@
       letter-spacing: -0.02em;
       line-height: 1.1;
     }
+
+    header > div { min-width: 0; }
 
     .description {
       margin: 6px 0 0;
@@ -229,6 +222,50 @@
 
     .message.pending p { color: var(--muted); }
 
+    #thanks {
+      max-width: 36rem;
+      margin: 8px auto 12px;
+    }
+
+    #thanks h2 {
+      margin: 0 0 8px;
+      font-family: "Fraunces", Georgia, serif;
+      font-size: 2rem;
+      font-weight: 640;
+      letter-spacing: -0.02em;
+    }
+
+    #thanks-lead,
+    #thanks-topic {
+      margin: 0 0 8px;
+      color: var(--muted);
+    }
+
+    #thanks-result {
+      margin: 16px 0 22px;
+      padding: 14px 16px;
+      white-space: pre-wrap;
+      background: #fffdf8;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+    }
+
+    #another {
+      border: 0;
+      background: var(--green);
+      color: var(--green-ink);
+      border-radius: 14px;
+      padding: 12px 18px;
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    #another:focus-visible {
+      outline: 2px solid var(--green);
+      outline-offset: 2px;
+    }
+
     #composer {
       flex: none;
       border-top: 1px solid var(--line);
@@ -304,7 +341,7 @@
       header { align-items: flex-start; flex-direction: column; }
       h1 { font-size: 1.5rem; }
       .compose-row { grid-template-columns: 1fr; }
-      #send { width: 100%; }
+      #send, #another { width: 100%; }
     }
   </style>
 </head>
@@ -312,9 +349,8 @@
   <div class="app">
     <header>
       <div>
-        <p class="kicker">Golden dataset</p>
         <h1>Concept Checker</h1>
-        <p class="description">Check your ideas against the golden dataset.</p>
+        <p class="description">Explain an idea and see whether your reasoning holds up.</p>
         <p id="current" hidden></p>
       </div>
       <button type="button" id="restart" hidden>Start over</button>
@@ -329,6 +365,13 @@
         <button type="button" id="retry" hidden>Try again</button>
       </section>
       <ol class="messages" id="messages" aria-live="polite"></ol>
+      <section id="thanks" hidden aria-labelledby="thanks-title">
+        <h2 id="thanks-title">Thank you</h2>
+        <p id="thanks-lead">This check is finished. There is nothing more to answer.</p>
+        <p id="thanks-topic"></p>
+        <p id="thanks-result"></p>
+        <button type="button" id="another">Check another topic</button>
+      </section>
     </main>
 
     <form id="composer" hidden>
@@ -349,6 +392,10 @@
     const topicsStatus = document.querySelector("#topics-status");
     const retry = document.querySelector("#retry");
     const messagesEl = document.querySelector("#messages");
+    const thanks = document.querySelector("#thanks");
+    const thanksTopic = document.querySelector("#thanks-topic");
+    const thanksResult = document.querySelector("#thanks-result");
+    const another = document.querySelector("#another");
     const composer = document.querySelector("#composer");
     const answer = document.querySelector("#answer");
     const send = document.querySelector("#send");
@@ -363,6 +410,7 @@
 
     retry.addEventListener("click", loadTopics);
     restart.addEventListener("click", reset);
+    another.addEventListener("click", reset);
     composer.addEventListener("submit", onSubmit);
     answer.addEventListener("keydown", (event) => {
       if (event.key === "Enter" && !event.shiftKey) {
@@ -432,11 +480,17 @@
       });
     }
 
-    // conceptCheck.py only leaves IDLE when the message equals an idea string.
-    function needsTopic(text) {
+    // These two strings are returned only after the fresh case, when the check is over.
+    function flowFinished(text) {
       return text.includes("Pick another idea to continue.")
-        || text.includes("Pick an idea to try again.")
-        || text.includes("Please select an idea from the examples.");
+        || text.includes("Pick an idea to try again.");
+    }
+
+    function outcomeText(text) {
+      return text
+        .replace("Pick another idea to continue.", "")
+        .replace("Pick an idea to try again.", "")
+        .trim();
     }
 
     async function postCheck(workflow, gen) {
@@ -472,7 +526,8 @@
         if (gen !== requestGen || reply == null) return;
         pending.remove();
         addMessage("checker", reply);
-        if (needsTopic(reply)) showPicker("again");
+        if (flowFinished(reply)) showThanks(reply);
+        else if (reply.includes("Please select an idea from the examples.")) showPicker("start");
         else showComposer();
       } catch (error) {
         if (gen !== requestGen) return;
@@ -488,8 +543,8 @@
         if (gen === requestGen) {
           busy = false;
           setTopicsDisabled(false);
+          if (thanks.hidden) scrollToEnd();
         }
-        scrollToEnd();
       }
     }
 
@@ -509,7 +564,7 @@
         if (gen !== requestGen || reply == null) return;
         pending.remove();
         addMessage("checker", reply);
-        if (needsTopic(reply)) showPicker("again");
+        if (flowFinished(reply)) showThanks(reply);
         else showComposer();
       } catch (error) {
         if (gen !== requestGen) return;
@@ -521,12 +576,14 @@
           busy = false;
           answer.disabled = false;
           send.disabled = false;
+          if (thanks.hidden) scrollToEnd();
         }
-        scrollToEnd();
       }
     }
 
     function showComposer() {
+      thanks.hidden = true;
+      messagesEl.hidden = false;
       picker.hidden = true;
       composer.hidden = false;
       answer.disabled = false;
@@ -534,7 +591,22 @@
       answer.focus();
     }
 
+    function showThanks(reply) {
+      composer.hidden = true;
+      picker.hidden = true;
+      messagesEl.hidden = true;
+      restart.hidden = true;
+      current.hidden = true;
+      thanks.hidden = false;
+      thanksTopic.textContent = current.textContent;
+      thanksResult.textContent = outcomeText(reply);
+      main.scrollTop = 0;
+      another.focus();
+    }
+
     function showPicker(mode) {
+      thanks.hidden = true;
+      messagesEl.hidden = false;
       composer.hidden = true;
       picker.hidden = false;
       answer.value = "";
@@ -556,6 +628,8 @@
       busy = false;
       sessionId = newSessionId();
       messagesEl.replaceChildren();
+      messagesEl.hidden = false;
+      thanks.hidden = true;
       answer.value = "";
       answer.disabled = false;
       send.disabled = false;
